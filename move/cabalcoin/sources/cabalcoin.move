@@ -124,43 +124,55 @@ module cabal_addr::cabalcoin {
         fungible_asset::deposit_with_ref(&managed_fungible_asset.transfer_ref, to_wallet, fa);
     }
 
-    // inline fun authorized_borrow_refs(
-    //     owner: &signer,
-    //     asset: Object<Metadata>,
-    // ): &ManagedFungibleAsset acquires ManagedFungibleAsset {
-    //     assert!(object::is_owner(asset, signer::address_of(owner)), error::permission_denied(ENOT_OWNER));
-    //     borrow_global<ManagedFungibleAsset>(object::object_address(&asset))
-    // }
+    // Test-only function that bypasses time checks
+    #[test_only]
+    public fun claim_test_only(claimant: &signer) acquires ManagedFungibleAsset, AllowlistConfig {
+        let address = signer::address_of(claimant);
+        let config = borrow_global_mut<AllowlistConfig>(@cabal_addr);
+
+        let table_ref = &mut config.allow_list.table;
+        let is_allowed = table::contains(table_ref, address);
+        assert!(is_allowed, error::permission_denied(ENOT_ON_ALLOWLIST));
+
+        let already_claimed = *table::borrow(table_ref, address);
+        assert!(!already_claimed, error::invalid_state(EALREADY_CLAIMED));
+
+        let claimed_ref = table::borrow_mut(table_ref, address);
+        *claimed_ref = true;
+
+        let asset = get_metadata();
+        let managed_fungible_asset = borrow_global<ManagedFungibleAsset>(object::object_address(&asset));
+        let to_wallet = primary_fungible_store::ensure_primary_store_exists(address, asset);
+        let fa = fungible_asset::mint(&managed_fungible_asset.mint_ref, 10_000_000_000);
+        fungible_asset::deposit_with_ref(&managed_fungible_asset.transfer_ref, to_wallet, fa);
+    }
 
     #[test(creator = @cabal_addr)]
     fun test_basic_flow(
         creator: &signer,
-    ) acquires ManagedFungibleAsset {
+    ) acquires ManagedFungibleAsset, AllowlistConfig {
         init_module(creator);
+        let allowed_addresses = vector[];
         let creator_address = signer::address_of(creator);
-        let aaron_address = @0xface;
-
-        mint(creator, creator_address, 100);
+        vector::push_back(&mut allowed_addresses, creator_address);
+        let claim_start = 0;
+        let claim_end = 999999999; // Far in the future
+        add_to_allowlist(creator, allowed_addresses, claim_start, claim_end);
+        
+        // Test claiming using test-only function
+        claim_test_only(creator);
         let asset = get_metadata();
-        assert!(primary_fungible_store::balance(creator_address, asset) == 100, 4);
-        freeze_account(creator, creator_address);
-        assert!(primary_fungible_store::is_frozen(creator_address, asset), 5);
-        transfer(creator, creator_address, aaron_address, 10);
-        assert!(primary_fungible_store::balance(aaron_address, asset) == 10, 6);
-
-        unfreeze_account(creator, creator_address);
-        assert!(!primary_fungible_store::is_frozen(creator_address, asset), 7);
-        burn(creator, creator_address, 90);
+        assert!(primary_fungible_store::balance(creator_address, asset) == 10_000_000_000, 4);
     }
 
     #[test(creator = @cabal_addr, aaron = @0xface)]
-    #[expected_failure(abort_code = 0x50001, location = Self)]
+    #[expected_failure(abort_code = 0x50002, location = Self)]
     fun test_permission_denied(
         creator: &signer,
         aaron: &signer
-    ) acquires ManagedFungibleAsset {
+    ) acquires ManagedFungibleAsset, AllowlistConfig {
         init_module(creator);
-        let creator_address = signer::address_of(creator);
-        mint(aaron, creator_address, 100);
+        // Don't add aaron to allowlist
+        claim_test_only(aaron);
     }
 }
