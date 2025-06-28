@@ -1,8 +1,9 @@
 # Cabal Coin
 
 This project implements a simple Fungible Asset that can only be claimed via allowlist.
-The allowlist is managed by the admin, who can add addresses and define the claim start / end times.
-Successful claimants receive 100 CabalCoin (CBL).
+The allowlist is managed by the developer, who can add addresses and define the claim start / end times.
+
+Successful claimants receive 100 CabalCoin (CBL)
 
 ## Installation
 
@@ -144,4 +145,7 @@ Thank you for reading!
 
 This project was built from the aptos node app template `create-aptos-dapp` and cribbed from the example code in the Aptos TS SDK.
 
-More info here: https://aptos.dev/en/build/create-aptos-dapp
+More info here:
+
+- https://aptos.dev/en/build/create-aptos-dapp
+- https://github.com/aptos-labs/aptos-ts-sdk
