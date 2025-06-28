@@ -17,12 +17,6 @@ We have just one script, which takes us on a little journey to illustrate how Ca
 
 `npm run cabal`
 
-## Testing
-
-To run the move tests, use:
-
-`npm run test`
-
 This command:
 
 - Compiles the module.
@@ -34,6 +28,12 @@ This command:
 - Publishes the module under Alice's account.
 - Unleashes the players to interact with the module.
 - Finishes with explorer links to resulting account balances.
+
+## Testing
+
+To run the move tests, use:
+
+`npm run test`
 
 ## Sample Output
 
